@@ -1,18 +1,25 @@
 {
   "name": "slidev-mcp",
   "type": "module",
-  "version": "0.0.1",
-  "description": "",
+  "version": "1.0.0",
+  "description": "A Model Context Protocol (MCP) server for generating beautiful Slidev presentations using AI",
   "author": "zerob13",
   "license": "MIT",
-  "funding": "https://github.com/sponsors/Simon-He95",
-  "homepage": "https://github.com/Simon-He95/vitesse#readme",
+  "homepage": "https://github.com/zerob13/slidev-mcp#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Simon-He95/vitesse.git"
+    "url": "git+https://github.com/zerob13/slidev-mcp.git"
   },
-  "bugs": "https://github.com/Simon-He95/vitesse/issues",
-  "keywords": [],
+  "bugs": "https://github.com/zerob13/slidev-mcp/issues",
+  "keywords": [
+    "slidev",
+    "mcp",
+    "presentation",
+    "ai",
+    "slides",
+    "ppt",
+    "markdown"
+  ],
   "sideEffects": false,
   "exports": {
     ".": {
@@ -49,6 +56,13 @@
     "test": "vitest",
     "typecheck": "tsc --noEmit"
   },
+  "peerDependencies": {
+    "@slidev/cli": "^0.49.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.15.1",
+    "zod": "^4.0.5"
+  },
   "devDependencies": {
     "@antfu/eslint-config": "^4.14.1",
     "@sxzz/prettier-config": "^2.2.1",
@@ -70,9 +84,5 @@
     ],
     "*.{vue,js,ts,jsx,tsx,md,json}": "eslint --fix"
   },
-  "prettier": "@sxzz/prettier-config",
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.15.1",
-    "zod": "^4.0.5"
-  }
+  "prettier": "@sxzz/prettier-config"
 }
