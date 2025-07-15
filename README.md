@@ -12,11 +12,11 @@
 
 ### 🔧 工具集合
 - **内容生成工具**: 根据主题和描述生成幻灯片内容
-- **网络搜索工具**: 搜索相关内容充实演讲材料
-- **网页抓取工具**: 从网页提取相关信息
+- **模板初始化**: 从专业模板快速启动项目
 - **图片处理工具**: 处理和优化演讲中的图片
 - **代码格式化**: 为技术演讲格式化代码块
 - **对比幻灯片**: 创建双栏对比展示
+- **布局管理**: 提供多种专业布局选择
 
 ### 📐 布局支持
 支持所有Slidev内置布局：
@@ -105,24 +105,29 @@ pnpm start
 }
 ```
 
-### 🌐 网络工具
+### 🚀 项目初始化
 
-#### `search-content`
-搜索网络内容
+#### `init-from-template`
+从 LittleSound talks 模板初始化新项目
 ```typescript
 {
-  query: string,          // 搜索查询
-  limit?: number          // 结果数量限制
+  projectName: string,    // 项目名称
+  projectPath: string,    // 项目路径
+  authorName: string      // 作者名称
 }
 ```
 
-#### `scrape-content`
-抓取网页内容
-```typescript
-{
-  url: string            // 目标URL
-}
-```
+这个工具会：
+- 使用 `npx degit LittleSound/talks-template` 克隆模板
+- 自动安装依赖 (`pnpm i`)
+- 执行所有必要的初始化步骤：
+  - 更新 LICENSE 中的作者信息
+  - 删除 .github 文件夹
+  - 用模板替换 README.md
+  - 创建新的演讲文件夹（以当前日期命名）
+  - 更新项目信息
+
+完成后提醒用户运行 `pnpm dev` 启动开发服务器。
 
 ### 🎨 布局工具
 
