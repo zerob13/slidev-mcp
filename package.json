@@ -1,9 +1,9 @@
 {
-  "name": "vitesse",
+  "name": "slidev-mcp",
   "type": "module",
   "version": "0.0.1",
   "description": "",
-  "author": "Simon He",
+  "author": "zerob13",
   "license": "MIT",
   "funding": "https://github.com/sponsors/Simon-He95",
   "homepage": "https://github.com/Simon-He95/vitesse#readme",
@@ -70,5 +70,9 @@
     ],
     "*.{vue,js,ts,jsx,tsx,md,json}": "eslint --fix"
   },
-  "prettier": "@sxzz/prettier-config"
+  "prettier": "@sxzz/prettier-config",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.15.1",
+    "zod": "^4.0.5"
+  }
 }
