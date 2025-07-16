@@ -1,3 +1,7 @@
 packages:
   - playground
   - examples/*
+onlyBuiltDependencies:
+  - esbuild
+  - rolldown
+  - vue-demi
