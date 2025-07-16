@@ -16,70 +16,154 @@ import {
   validateSlideContent,
 } from './tools.js'
 
-// Available Slidev layouts
-const SLIDEV_LAYOUTS = [
-  'default',
-  'center',
-  'cover',
-  'end',
-  'fact',
-  'full',
-  'image',
-  'image-left',
-  'image-right',
-  'iframe',
-  'iframe-left',
-  'iframe-right',
-  'intro',
-  'none',
-  'quote',
-  'section',
-  'statement',
-  'two-cols',
-  'two-cols-header',
-] as const
+// Helper functions for recommendations
+function recommendTheme(topic: string, style?: string): string {
+  const topicLower = topic.toLowerCase()
+  const styleLower = style?.toLowerCase() || ''
 
-// Available themes
-const SLIDEV_THEMES = [
-  'seriph',
-  'default',
-  'apple-basic',
-  'bricks',
-  'light',
-  'academic',
-  'eloc',
-  'penguin',
-  'shibainu',
-] as const
+  if (
+    styleLower.includes('academic')
+    || styleLower.includes('research')
+    || topicLower.includes('research')
+  ) {
+    return 'academic'
+  }
+  if (
+    styleLower.includes('tech')
+    || topicLower.includes('tech')
+    || topicLower.includes('programming')
+    || topicLower.includes('development')
+  ) {
+    return 'apple-basic'
+  }
+  if (
+    styleLower.includes('creative')
+    || styleLower.includes('fun')
+    || topicLower.includes('creative')
+  ) {
+    return 'bricks'
+  }
+  if (
+    styleLower.includes('formal')
+    || styleLower.includes('business')
+    || topicLower.includes('business')
+  ) {
+    return 'light'
+  }
+  if (styleLower.includes('casual') || styleLower.includes('friendly')) {
+    return 'penguin'
+  }
+
+  // Default recommendation
+  return 'seriph'
+}
+
+function recommendLayout(description: string): string {
+  const descLower = description.toLowerCase()
+
+  if (
+    descLower.includes('comparison')
+    || descLower.includes('vs')
+    || descLower.includes('versus')
+  ) {
+    return 'two-cols'
+  }
+  if (descLower.includes('quote') || descLower.includes('saying')) {
+    return 'quote'
+  }
+  if (
+    descLower.includes('image')
+    || descLower.includes('picture')
+    || descLower.includes('photo')
+  ) {
+    return 'image'
+  }
+  if (descLower.includes('center') || descLower.includes('focus')) {
+    return 'center'
+  }
+  if (descLower.includes('intro') || descLower.includes('introduction')) {
+    return 'intro'
+  }
+  if (
+    descLower.includes('end')
+    || descLower.includes('conclusion')
+    || descLower.includes('thank')
+  ) {
+    return 'end'
+  }
+
+  return 'default'
+}
 
 // Schema definitions
 const CreateSlidevProjectSchema = z.object({
   title: z.string().describe('Presentation title'),
   author: z.string().describe('Author name'),
-  theme: z.string().optional().describe('Theme name (default: seriph)'),
+  theme: z
+    .string()
+    .optional()
+    .describe(
+      'Specific theme name, if not provided will auto-recommend based on topic',
+    ),
   projectPath: z.string().describe('Path where to create the project'),
   language: z.string().optional().describe('Language code (default: en)'),
+  useTemplate: z
+    .boolean()
+    .optional()
+    .describe('Whether to use LittleSound talks template (default: false)'),
+  style: z
+    .string()
+    .optional()
+    .describe(
+      'Style preferences for theme recommendation (e.g., formal, casual, technical)',
+    ),
 })
 
 const GenerateSlideContentSchema = z.object({
   topic: z.string().describe('Main topic or title of the slide'),
-  description: z.string().describe('Detailed description of what the slide should contain'),
-  layout: z.enum(SLIDEV_LAYOUTS).optional().describe('Preferred layout'),
-  style: z.string().optional().describe('Style preferences (e.g., formal, casual, technical)'),
+  description: z
+    .string()
+    .describe('Detailed description of what the slide should contain'),
+  layout: z
+    .string()
+    .optional()
+    .describe(
+      'Specific layout name, if not provided will auto-recommend based on description',
+    ),
+  style: z
+    .string()
+    .optional()
+    .describe('Style preferences (e.g., formal, casual, technical)'),
 })
 
 const AddSlideSchema = z.object({
   slidesPath: z.string().describe('Path to the slides.md file'),
-  slideContent: z.string().describe('Content of the new slide in Slidev format'),
-  position: z.number().optional().describe('Position to insert the slide (default: end)'),
+  slideContent: z
+    .string()
+    .describe('Content of the new slide in Slidev format'),
+  position: z
+    .number()
+    .optional()
+    .describe('Position to insert the slide (default: end)'),
 })
 
 const GeneratePresentationSchema = z.object({
   topic: z.string().describe('Main topic of the presentation'),
   author: z.string().describe('Author name'),
   duration: z.number().optional().describe('Duration in minutes (default: 30)'),
-  theme: z.string().optional().describe('Theme to use (default: seriph)'),
+  theme: z
+    .string()
+    .optional()
+    .describe(
+      'Specific theme name, if not provided will auto-recommend based on topic',
+    ),
   outputPath: z.string().describe('Path where to save the presentation'),
+  style: z
+    .string()
+    .optional()
+    .describe(
+      'Style preferences for theme recommendation (e.g., formal, casual, technical, academic)',
+    ),
 })
 
 const CreateComparisonSchema = z.object({
@@ -94,22 +178,26 @@ const CreateImageSlideSchema = z.object({
   title: z.string().describe('Slide title'),
   imagePath: z.string().describe('Path to image file'),
   caption: z.string().optional().describe('Image caption'),
-  layout: z.enum(['image', 'image-left', 'image-right']).optional().describe('Image layout'),
+  layout: z
+    .enum(['image', 'image-left', 'image-right'])
+    .optional()
+    .describe('Image layout'),
 })
 
 const FormatCodeSchema = z.object({
   code: z.string().describe('Code to format'),
-  language: z.string().optional().describe('Programming language (default: javascript)'),
-})
-
-const InitFromTemplateSchema = z.object({
-  projectName: z.string().describe('Name of the new project/talk'),
-  projectPath: z.string().describe('Path where to create the project'),
-  authorName: z.string().describe('Author name for the project'),
+  language: z
+    .string()
+    .optional()
+    .describe('Programming language (default: javascript)'),
 })
 
 // Helper function to generate slide content based on topic and layout
-function generateSlideContent(topic: string, layout: string, content: string): string {
+function generateSlideContent(
+  topic: string,
+  layout: string,
+  content: string,
+): string {
   const layoutConfig = layout === 'default' ? '' : `layout: ${layout}\n`
 
   return `---
@@ -122,6 +210,28 @@ ${content}
 ---
 `
 }
+
+// Template checklist for user guidance
+const TEMPLATE_CHECKLIST = `
+## 📋 Template Setup Checklist
+
+恭喜！您已经成功使用模板创建了项目。为了完成设置，请按照以下清单进行操作：
+
+- [ ] 更新 \`LICENSE\` 文件中的作者名称
+- [ ] 删除 \`.github\` 文件夹（包含资助信息）
+- [ ] 使用 \`README-template.md\` 替换 \`README.md\`
+- [ ] 复制 \`0000-00-00\` 文件夹并开始创建您的实际演讲内容
+- [ ] 查找文件中的 TODO 标签以了解更多信息
+
+🎯 **建议下一步操作：**
+1. 导航到项目目录
+2. 运行 \`pnpm dev\` 启动开发服务器
+3. 在浏览器中查看您的演示文稿
+4. 编辑最新日期文件夹中的 \`slides.md\` 文件
+5. 按照上述清单完成项目设置
+
+✨ 开始创建您的精彩演示文稿吧！
+`
 
 // Create Slidev MCP server
 const server = new Server(
@@ -142,29 +252,66 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: 'create-slidev-project',
-        description: 'Create a new Slidev presentation project with specified configuration',
+        description:
+          'Create a new Slidev presentation project with automatic theme recommendation and optional template support',
         inputSchema: {
           type: 'object',
           properties: {
             title: { type: 'string', description: 'Presentation title' },
             author: { type: 'string', description: 'Author name' },
-            theme: { type: 'string', description: 'Theme name (default: seriph)' },
-            projectPath: { type: 'string', description: 'Path where to create the project' },
-            language: { type: 'string', description: 'Language code (default: en)' },
+            theme: {
+              type: 'string',
+              description:
+                'Specific theme name, if not provided will auto-recommend based on topic',
+            },
+            projectPath: {
+              type: 'string',
+              description: 'Path where to create the project',
+            },
+            language: {
+              type: 'string',
+              description: 'Language code (default: en)',
+            },
+            useTemplate: {
+              type: 'boolean',
+              description:
+                'Whether to use LittleSound talks template (default: false)',
+            },
+            style: {
+              type: 'string',
+              description:
+                'Style preferences for theme recommendation (e.g., formal, casual, technical, academic)',
+            },
           },
           required: ['title', 'author', 'projectPath'],
         },
       },
       {
         name: 'generate-slide-content',
-        description: 'Generate Slidev slide content based on topic description and requirements',
+        description:
+          'Generate Slidev slide content with automatic layout recommendation based on content description',
         inputSchema: {
           type: 'object',
           properties: {
-            topic: { type: 'string', description: 'Main topic or title of the slide' },
-            description: { type: 'string', description: 'Detailed description of what the slide should contain' },
-            layout: { type: 'string', description: 'Preferred layout', enum: SLIDEV_LAYOUTS },
-            style: { type: 'string', description: 'Style preferences (e.g., formal, casual, technical)' },
+            topic: {
+              type: 'string',
+              description: 'Main topic or title of the slide',
+            },
+            description: {
+              type: 'string',
+              description:
+                'Detailed description of what the slide should contain',
+            },
+            layout: {
+              type: 'string',
+              description:
+                'Specific layout name, if not provided will auto-recommend based on description',
+            },
+            style: {
+              type: 'string',
+              description:
+                'Style preferences (e.g., formal, casual, technical)',
+            },
           },
           required: ['topic', 'description'],
         },
@@ -175,42 +322,52 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         inputSchema: {
           type: 'object',
           properties: {
-            slidesPath: { type: 'string', description: 'Path to the slides.md file' },
-            slideContent: { type: 'string', description: 'Content of the new slide in Slidev format' },
-            position: { type: 'number', description: 'Position to insert the slide (default: end)' },
+            slidesPath: {
+              type: 'string',
+              description: 'Path to the slides.md file',
+            },
+            slideContent: {
+              type: 'string',
+              description: 'Content of the new slide in Slidev format',
+            },
+            position: {
+              type: 'number',
+              description: 'Position to insert the slide (default: end)',
+            },
           },
           required: ['slidesPath', 'slideContent'],
         },
       },
       {
-        name: 'list-layouts',
-        description: 'List all available Slidev layouts',
-        inputSchema: {
-          type: 'object',
-          properties: {},
-          required: [],
-        },
-      },
-      {
-        name: 'list-themes',
-        description: 'List all available Slidev themes',
-        inputSchema: {
-          type: 'object',
-          properties: {},
-          required: [],
-        },
-      },
-      {
         name: 'generate-presentation',
-        description: 'Generate a complete Slidev presentation from a topic and duration',
+        description:
+          'Generate a complete Slidev presentation with automatic theme recommendation',
         inputSchema: {
           type: 'object',
           properties: {
-            topic: { type: 'string', description: 'Main topic of the presentation' },
+            topic: {
+              type: 'string',
+              description: 'Main topic of the presentation',
+            },
             author: { type: 'string', description: 'Author name' },
-            duration: { type: 'number', description: 'Duration in minutes (default: 30)' },
-            theme: { type: 'string', description: 'Theme to use (default: seriph)' },
-            outputPath: { type: 'string', description: 'Path where to save the presentation' },
+            duration: {
+              type: 'number',
+              description: 'Duration in minutes (default: 30)',
+            },
+            theme: {
+              type: 'string',
+              description:
+                'Specific theme name, if not provided will auto-recommend based on topic',
+            },
+            outputPath: {
+              type: 'string',
+              description: 'Path where to save the presentation',
+            },
+            style: {
+              type: 'string',
+              description:
+                'Style preferences for theme recommendation (e.g., formal, casual, technical, academic)',
+            },
           },
           required: ['topic', 'author', 'outputPath'],
         },
@@ -223,11 +380,25 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {
             title: { type: 'string', description: 'Slide title' },
             leftTitle: { type: 'string', description: 'Left column title' },
-            leftContent: { type: 'array', items: { type: 'string' }, description: 'Left column content items' },
+            leftContent: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Left column content items',
+            },
             rightTitle: { type: 'string', description: 'Right column title' },
-            rightContent: { type: 'array', items: { type: 'string' }, description: 'Right column content items' },
+            rightContent: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Right column content items',
+            },
           },
-          required: ['title', 'leftTitle', 'leftContent', 'rightTitle', 'rightContent'],
+          required: [
+            'title',
+            'leftTitle',
+            'leftContent',
+            'rightTitle',
+            'rightContent',
+          ],
         },
       },
       {
@@ -239,7 +410,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             title: { type: 'string', description: 'Slide title' },
             imagePath: { type: 'string', description: 'Path to image file' },
             caption: { type: 'string', description: 'Image caption' },
-            layout: { type: 'string', description: 'Image layout', enum: ['image', 'image-left', 'image-right'] },
+            layout: {
+              type: 'string',
+              description: 'Image layout',
+              enum: ['image', 'image-left', 'image-right'],
+            },
           },
           required: ['title', 'imagePath'],
         },
@@ -251,33 +426,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           type: 'object',
           properties: {
             code: { type: 'string', description: 'Code to format' },
-            language: { type: 'string', description: 'Programming language (default: javascript)' },
+            language: {
+              type: 'string',
+              description: 'Programming language (default: javascript)',
+            },
           },
           required: ['code'],
-        },
-      },
-      {
-        name: 'init-from-template',
-        description: 'Initialize a new Slidev project from LittleSound talks template',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            projectName: { type: 'string', description: 'Name of the new project/talk' },
-            projectPath: { type: 'string', description: 'Path where to create the project' },
-            authorName: { type: 'string', description: 'Author name for the project' },
-          },
-          required: ['projectName', 'projectPath', 'authorName'],
-        },
-      },
-      {
-        name: 'test-args',
-        description: 'Test tool to debug argument passing',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            testParam: { type: 'string', description: 'A test parameter' },
-          },
-          required: [],
         },
       },
     ],
@@ -289,7 +443,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params
 
     // Debug: log all incoming requests
-    console.error('Tool call request:', JSON.stringify({ name, args, type: typeof args }, null, 2))
+    console.error(
+      'Tool call request:',
+      JSON.stringify({ name, args, type: typeof args }, null, 2),
+    )
 
     // Handle case where arguments might be passed as a string or other formats
     let parsedArgs = args
@@ -304,9 +461,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         // If JSON parsing fails, treat as empty object
         parsedArgs = {}
       }
-    } else if (args === null || args === undefined) {
+    }
+    else if (args === null || args === undefined) {
       parsedArgs = {}
-    } else if (typeof args !== 'object') {
+    }
+    else if (typeof args !== 'object') {
       console.error('Unexpected argument type:', typeof args, args)
       parsedArgs = {}
     }
@@ -321,39 +480,128 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'create-slidev-project': {
         const parsed = CreateSlidevProjectSchema.safeParse(parsedArgs)
         if (!parsed.success) {
-          throw new Error(`Invalid arguments for create-slidev-project: ${parsed.error}`)
+          throw new Error(
+            `Invalid arguments for create-slidev-project: ${parsed.error}`,
+          )
         }
-        const { title, author, theme = 'seriph', projectPath, language: _language = 'en' } = parsed.data
+        const {
+          title,
+          author,
+          theme,
+          projectPath,
+          language: _language = 'en',
+          useTemplate = false,
+          style,
+        } = parsed.data
+
+        // Recommend theme if not provided
+        const selectedTheme = theme || recommendTheme(title, style)
 
         try {
-          // Create project directory
-          await fs.mkdir(projectPath, { recursive: true })
+          if (useTemplate) {
+            // Use template approach
+            const { exec } = await import('node:child_process')
+            const { promisify } = await import('node:util')
+            const execAsync = promisify(exec)
 
-          // Create package.json
-          const packageJson = {
-            name: title.toLowerCase().replace(/\s+/g, '-'),
-            version: '1.0.0',
-            description: `Presentation: ${title}`,
-            author,
-            scripts: {
-              dev: 'slidev',
-              build: 'slidev build',
-              export: 'slidev export',
-            },
-            dependencies: {
-              '@slidev/cli': '^0.49.0',
-              '@slidev/theme-seriph': '^0.23.0',
-            },
+            // Create project directory
+            await fs.mkdir(projectPath, { recursive: true })
+
+            // Clone template using degit
+            const degitCommand = `npx degit LittleSound/talks-template "${projectPath}"`
+            await execAsync(degitCommand)
+
+            // Install dependencies
+            const installCommand = 'pnpm i'
+            await execAsync(installCommand, { cwd: projectPath })
+
+            // Update package.json with project info
+            const packageJsonPath = path.join(projectPath, 'package.json')
+            try {
+              const packageJsonContent = await fs.readFile(
+                packageJsonPath,
+                'utf-8',
+              )
+              const packageJsonData = JSON.parse(packageJsonContent)
+              packageJsonData.name = title.toLowerCase().replace(/\s+/g, '-')
+              packageJsonData.description = `Presentation: ${title}`
+              packageJsonData.author = author
+              await fs.writeFile(
+                packageJsonPath,
+                JSON.stringify(packageJsonData, null, 2),
+              )
+            }
+            catch {
+              // package.json might not exist, skip
+            }
+
+            // Create new talk folder with current date
+            const currentDate = new Date().toISOString().slice(0, 10)
+            const templateTalkPath = path.join(projectPath, '0000-00-00')
+            const newTalkPath = path.join(projectPath, currentDate)
+            try {
+              await fs.cp(templateTalkPath, newTalkPath, { recursive: true })
+
+              // Update the slides.md in new talk folder
+              const newSlidesMdPath = path.join(newTalkPath, 'slides.md')
+              const slidesMdContent = await fs.readFile(
+                newSlidesMdPath,
+                'utf-8',
+              )
+              const updatedSlidesMdContent = slidesMdContent
+                .replace(/title: .*/g, `title: ${title}`)
+                .replace(/author: .*/g, `author: ${author}`)
+                .replace(/theme: .*/g, `theme: ${selectedTheme}`)
+              await fs.writeFile(newSlidesMdPath, updatedSlidesMdContent)
+            }
+            catch {
+              // Template folder might not exist, skip
+            }
+
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `🎉 Successfully created Slidev project "${title}" from LittleSound talks template!
+
+📁 Project created at: ${projectPath}
+🎨 Selected theme: ${selectedTheme}
+📅 Talk folder: ${currentDate}
+
+${TEMPLATE_CHECKLIST}`,
+                },
+              ],
+            }
           }
+          else {
+            // Regular project creation
+            await fs.mkdir(projectPath, { recursive: true })
 
-          await fs.writeFile(
-            path.join(projectPath, 'package.json'),
-            JSON.stringify(packageJson, null, 2),
-          )
+            // Create package.json
+            const packageJson = {
+              name: title.toLowerCase().replace(/\s+/g, '-'),
+              version: '1.0.0',
+              description: `Presentation: ${title}`,
+              author,
+              scripts: {
+                dev: 'slidev',
+                build: 'slidev build',
+                export: 'slidev export',
+              },
+              dependencies: {
+                '@slidev/cli': '^0.49.0',
+                '@slidev/theme-seriph': '^0.23.0',
+              },
+            }
 
-          // Create basic slides.md
-          const slidesContent = `---
-theme: ${theme}
+            await fs.writeFile(
+              path.join(projectPath, 'package.json'),
+              JSON.stringify(packageJson, null, 2),
+            )
+
+            // Create basic slides.md
+            const slidesContent = `---
+theme: ${selectedTheme}
 title: ${title}
 author: ${author}
 drawings:
@@ -405,18 +653,28 @@ layout: end
 Questions?
 `
 
-          await fs.writeFile(
-            path.join(projectPath, 'slides.md'),
-            slidesContent,
-          )
+            await fs.writeFile(
+              path.join(projectPath, 'slides.md'),
+              slidesContent,
+            )
 
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Successfully created Slidev project "${title}" at ${projectPath}`,
-              },
-            ],
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `🎉 Successfully created Slidev project "${title}" at ${projectPath}
+
+🎨 Recommended theme: ${selectedTheme}
+💡 Theme selected based on: ${style ? `style preference (${style})` : 'topic analysis'}
+
+🚀 Next steps:
+1. cd ${projectPath}
+2. npm install
+3. npm run dev
+4. Edit slides.md to create your presentation`,
+                },
+              ],
+            }
           }
         }
         catch (error) {
@@ -424,7 +682,7 @@ Questions?
             content: [
               {
                 type: 'text',
-                text: `Error creating project: ${error}`,
+                text: `❌ Error creating project: ${error instanceof Error ? error.message : String(error)}`,
               },
             ],
           }
@@ -434,15 +692,20 @@ Questions?
       case 'generate-slide-content': {
         const parsed = GenerateSlideContentSchema.safeParse(parsedArgs)
         if (!parsed.success) {
-          throw new Error(`Invalid arguments for generate-slide-content: ${parsed.error}`)
+          throw new Error(
+            `Invalid arguments for generate-slide-content: ${parsed.error}`,
+          )
         }
-        const { topic, description, layout = 'default' } = parsed.data
+        const { topic, description, layout } = parsed.data
+
+        // Recommend layout if not provided
+        const selectedLayout = layout || recommendLayout(description)
 
         try {
           // Generate content based on description
           let content = ''
 
-          if (layout === 'two-cols') {
+          if (selectedLayout === 'two-cols') {
             content = `
 ::left::
 
@@ -459,7 +722,10 @@ Questions?
 - Examples and use cases
 `
           }
-          else if (layout === 'image-left' || layout === 'image-right') {
+          else if (
+            selectedLayout === 'image-left'
+            || selectedLayout === 'image-right'
+          ) {
             content = `
 ## ${topic}
 
@@ -471,7 +737,7 @@ Key highlights:
 - Main point 3
 `
           }
-          else if (layout === 'quote') {
+          else if (selectedLayout === 'quote') {
             content = `
 > "${description}"
 
@@ -492,21 +758,32 @@ ${description}
 `
           }
 
-          const slideContent = generateSlideContent(topic, layout, content)
+          const slideContent = generateSlideContent(
+            topic,
+            selectedLayout,
+            content,
+          )
 
           return {
-            content: [{
-              type: 'text',
-              text: slideContent,
-            }],
+            content: [
+              {
+                type: 'text',
+                text: `${slideContent}
+
+💡 Recommended layout: ${selectedLayout}
+🎯 Layout selected based on: content analysis`,
+              },
+            ],
           }
         }
         catch (error) {
           return {
-            content: [{
-              type: 'text',
-              text: `Error generating slide content: ${error}`,
-            }],
+            content: [
+              {
+                type: 'text',
+                text: `❌ Error generating slide content: ${error}`,
+              },
+            ],
           }
         }
       }
@@ -533,72 +810,82 @@ ${description}
           await fs.writeFile(slidesPath, newContent)
 
           return {
-            content: [{
-              type: 'text',
-              text: `Successfully added slide to ${slidesPath}`,
-            }],
+            content: [
+              {
+                type: 'text',
+                text: `✅ Successfully added slide to ${slidesPath}`,
+              },
+            ],
           }
         }
         catch (error) {
           return {
-            content: [{
-              type: 'text',
-              text: `Error adding slide: ${error}`,
-            }],
+            content: [
+              {
+                type: 'text',
+                text: `❌ Error adding slide: ${error}`,
+              },
+            ],
           }
-        }
-      }
-
-      case 'list-layouts': {
-        console.error('list-layouts called with args:', parsedArgs)
-        return {
-          content: [{
-            type: 'text',
-            text: `Available Slidev layouts:\n${SLIDEV_LAYOUTS.map(layout => `- ${layout}`).join('\n')}`,
-          }],
-        }
-      }
-
-      case 'list-themes': {
-        return {
-          content: [{
-            type: 'text',
-            text: `Available Slidev themes:\n${SLIDEV_THEMES.map(theme => `- ${theme}`).join('\n')}`,
-          }],
         }
       }
 
       case 'generate-presentation': {
-        console.error('generate-presentation called with parsedArgs:', JSON.stringify(parsedArgs, null, 2))
+        console.error(
+          'generate-presentation called with parsedArgs:',
+          JSON.stringify(parsedArgs, null, 2),
+        )
         const parsed = GeneratePresentationSchema.safeParse(parsedArgs)
         if (!parsed.success) {
-          console.error('generate-presentation validation failed:', JSON.stringify(parsed.error.issues, null, 2))
+          console.error(
+            'generate-presentation validation failed:',
+            JSON.stringify(parsed.error.issues, null, 2),
+          )
           return {
-            content: [{
-              type: 'text',
-              text: `❌ Invalid arguments for generate-presentation:\n${JSON.stringify(parsed.error.issues, null, 2)}\n\nExpected:\n- topic (string): Main topic\n- author (string): Author name\n- outputPath (string): Where to save\n- duration (number, optional): Duration in minutes\n- theme (string, optional): Theme name`,
-            }],
+            content: [
+              {
+                type: 'text',
+                text: `❌ Invalid arguments for generate-presentation:\n${JSON.stringify(parsed.error.issues, null, 2)}\n\nExpected:\n- topic (string): Main topic\n- author (string): Author name\n- outputPath (string): Where to save\n- duration (number, optional): Duration in minutes\n- theme (string, optional): Theme name`,
+              },
+            ],
             isError: true,
           }
         }
-        const { topic, author, duration = 30, theme = 'seriph', outputPath } = parsed.data
+        const {
+          topic,
+          author,
+          duration = 30,
+          theme,
+          outputPath,
+          style,
+        } = parsed.data
+
+        // Recommend theme if not provided
+        const selectedTheme = theme || recommendTheme(topic, style)
 
         try {
           // Generate outline
           const outline = generatePresentationOutline(topic, duration)
 
           // Create presentation content
-          const presentationContent = createPresentationFromOutline(topic, author, outline, theme)
+          const presentationContent = createPresentationFromOutline(
+            topic,
+            author,
+            outline,
+            selectedTheme,
+          )
 
           // Validate content
           const validation = validateSlideContent(presentationContent)
 
           if (!validation.isValid) {
             return {
-              content: [{
-                type: 'text',
-                text: `Validation errors:\n${validation.errors.join('\n')}`,
-              }],
+              content: [
+                {
+                  type: 'text',
+                  text: `❌ Validation errors:\n${validation.errors.join('\n')}`,
+                },
+              ],
             }
           }
 
@@ -609,18 +896,26 @@ ${description}
           await fs.writeFile(outputPath, presentationContent)
 
           return {
-            content: [{
-              type: 'text',
-              text: `Successfully generated presentation "${topic}" with ${outline.length} slides at ${outputPath}`,
-            }],
+            content: [
+              {
+                type: 'text',
+                text: `🎉 Successfully generated presentation "${topic}" with ${outline.length} slides at ${outputPath}
+
+🎨 Selected theme: ${selectedTheme}
+💡 Theme selected based on: ${style ? `style preference (${style})` : 'topic analysis'}
+⏱️  Duration: ${duration} minutes`,
+              },
+            ],
           }
         }
         catch (error) {
           return {
-            content: [{
-              type: 'text',
-              text: `Error generating presentation: ${error}`,
-            }],
+            content: [
+              {
+                type: 'text',
+                text: `❌ Error generating presentation: ${error}`,
+              },
+            ],
           }
         }
       }
@@ -628,26 +923,39 @@ ${description}
       case 'create-comparison': {
         const parsed = CreateComparisonSchema.safeParse(parsedArgs)
         if (!parsed.success) {
-          throw new Error(`Invalid arguments for create-comparison: ${parsed.error}`)
+          throw new Error(
+            `Invalid arguments for create-comparison: ${parsed.error}`,
+          )
         }
-        const { title, leftTitle, leftContent, rightTitle, rightContent } = parsed.data
+        const { title, leftTitle, leftContent, rightTitle, rightContent }
+          = parsed.data
 
         try {
-          const slideContent = createComparisonSlide(title, leftTitle, leftContent, rightTitle, rightContent)
+          const slideContent = createComparisonSlide(
+            title,
+            leftTitle,
+            leftContent,
+            rightTitle,
+            rightContent,
+          )
 
           return {
-            content: [{
-              type: 'text',
-              text: slideContent,
-            }],
+            content: [
+              {
+                type: 'text',
+                text: slideContent,
+              },
+            ],
           }
         }
         catch (error) {
           return {
-            content: [{
-              type: 'text',
-              text: `Error creating comparison slide: ${error}`,
-            }],
+            content: [
+              {
+                type: 'text',
+                text: `❌ Error creating comparison slide: ${error}`,
+              },
+            ],
           }
         }
       }
@@ -655,26 +963,37 @@ ${description}
       case 'create-image-slide': {
         const parsed = CreateImageSlideSchema.safeParse(parsedArgs)
         if (!parsed.success) {
-          throw new Error(`Invalid arguments for create-image-slide: ${parsed.error}`)
+          throw new Error(
+            `Invalid arguments for create-image-slide: ${parsed.error}`,
+          )
         }
         const { title, imagePath, caption, layout = 'image' } = parsed.data
 
         try {
-          const slideContent = createImageSlide(title, imagePath, caption, layout)
+          const slideContent = createImageSlide(
+            title,
+            imagePath,
+            caption,
+            layout,
+          )
 
           return {
-            content: [{
-              type: 'text',
-              text: slideContent,
-            }],
+            content: [
+              {
+                type: 'text',
+                text: slideContent,
+              },
+            ],
           }
         }
         catch (error) {
           return {
-            content: [{
-              type: 'text',
-              text: `Error creating image slide: ${error}`,
-            }],
+            content: [
+              {
+                type: 'text',
+                text: `❌ Error creating image slide: ${error}`,
+              },
+            ],
           }
         }
       }
@@ -690,174 +1009,23 @@ ${description}
           const formattedCode = formatCodeBlock(code, language)
 
           return {
-            content: [{
-              type: 'text',
-              text: formattedCode,
-            }],
+            content: [
+              {
+                type: 'text',
+                text: formattedCode,
+              },
+            ],
           }
         }
         catch (error) {
           return {
-            content: [{
-              type: 'text',
-              text: `Error formatting code: ${error}`,
-            }],
+            content: [
+              {
+                type: 'text',
+                text: `❌ Error formatting code: ${error}`,
+              },
+            ],
           }
-        }
-      }
-
-      case 'init-from-template': {
-        // Debug: log the received arguments
-        console.error('Received args for init-from-template:', JSON.stringify(parsedArgs, null, 2))
-
-        const parsed = InitFromTemplateSchema.safeParse(parsedArgs)
-        if (!parsed.success) {
-          console.error('Validation failed:', parsed.error)
-          throw new Error(`Invalid arguments for init-from-template: ${JSON.stringify(parsed.error.issues, null, 2)}`)
-        }
-        const { projectName, projectPath, authorName } = parsed.data
-
-        try {
-          // Import required modules for subprocess execution
-          const { exec } = await import('node:child_process')
-          const { promisify } = await import('node:util')
-          const execAsync = promisify(exec)
-
-          // Create project directory
-          await fs.mkdir(projectPath, { recursive: true })
-
-          // Clone template using degit
-          const degitCommand = `npx degit LittleSound/talks-template "${projectPath}"`
-          await execAsync(degitCommand)
-
-          // Install dependencies
-          const installCommand = 'pnpm i'
-          await execAsync(installCommand, { cwd: projectPath })
-
-          // Execute checklist items
-
-          // 1. Change the author name in LICENSE
-          const licensePath = path.join(projectPath, 'LICENSE')
-          try {
-            const licenseContent = await fs.readFile(licensePath, 'utf-8')
-            const updatedLicense = licenseContent.replace(/Copyright \(c\) \d{4} .*/g, `Copyright (c) ${new Date().getFullYear()} ${authorName}`)
-            await fs.writeFile(licensePath, updatedLicense)
-          }
-          catch {
-            // LICENSE file might not exist, skip
-          }
-
-          // 2. Remove the .github folder
-          const githubPath = path.join(projectPath, '.github')
-          try {
-            await fs.rm(githubPath, { recursive: true, force: true })
-          }
-          catch {
-            // .github folder might not exist, skip
-          }
-
-          // 3. Use README-template.md to replace README.md
-          const readmeTemplatePath = path.join(projectPath, 'README-template.md')
-          const readmePath = path.join(projectPath, 'README.md')
-          try {
-            await fs.copyFile(readmeTemplatePath, readmePath)
-            await fs.unlink(readmeTemplatePath)
-          }
-          catch {
-            // Template might not exist, skip
-          }
-
-          // 4. Copy the 0000-00-00 folder and create new talk folder
-          const templateTalkPath = path.join(projectPath, '0000-00-00')
-          const newTalkPath = path.join(projectPath, new Date().toISOString().slice(0, 10))
-          try {
-            await fs.cp(templateTalkPath, newTalkPath, { recursive: true })
-          }
-          catch {
-            // Template folder might not exist, skip
-          }
-
-          // Update the main slides.md in new talk folder
-          const newSlidesMdPath = path.join(newTalkPath, 'slides.md')
-          try {
-            const slidesMdContent = await fs.readFile(newSlidesMdPath, 'utf-8')
-            const updatedSlidesMdContent = slidesMdContent
-              .replace(/title: .*/g, `title: ${projectName}`)
-              .replace(/author: .*/g, `author: ${authorName}`)
-            await fs.writeFile(newSlidesMdPath, updatedSlidesMdContent)
-          }
-          catch {
-            // slides.md might not exist in template, skip
-          }
-
-          // Update package.json with project info
-          const packageJsonPath = path.join(projectPath, 'package.json')
-          try {
-            const packageJsonContent = await fs.readFile(packageJsonPath, 'utf-8')
-            const packageJsonData = JSON.parse(packageJsonContent)
-            packageJsonData.name = projectName.toLowerCase().replace(/\s+/g, '-')
-            packageJsonData.description = `Presentation: ${projectName}`
-            packageJsonData.author = authorName
-            await fs.writeFile(packageJsonPath, JSON.stringify(packageJsonData, null, 2))
-          }
-          catch {
-            // package.json might not exist, skip
-          }
-
-          const successMessage = `🎉 Successfully initialized Slidev project "${projectName}" from LittleSound talks template!
-
-✅ Checklist completed:
-- ✅ Updated author name in LICENSE
-- ✅ Removed .github folder
-- ✅ Replaced README.md with template
-- ✅ Created new talk folder: ${new Date().toISOString().slice(0, 10)}
-- ✅ Updated project information
-
-📁 Project created at: ${projectPath}
-
-🚀 Next steps:
-1. cd ${projectPath}
-2. pnpm dev (to start the development server)
-3. Open your browser and see your presentation
-4. Edit the slides in ${new Date().toISOString().slice(0, 10)}/slides.md
-5. Look for TODO tags in files to learn more
-
-Enjoy creating your presentation! 🎊`
-
-          return {
-            content: [{
-              type: 'text',
-              text: successMessage,
-            }],
-          }
-        }
-        catch (error) {
-          return {
-            content: [{
-              type: 'text',
-              text: `❌ Error initializing from template: ${error instanceof Error ? error.message : String(error)}
-
-Please make sure you have:
-- Node.js installed
-- pnpm installed (npm install -g pnpm)
-- Internet connection for downloading template`,
-            }],
-          }
-        }
-      }
-
-      case 'test-args': {
-        console.error('test-args called with original args:', JSON.stringify(args, null, 2))
-        console.error('test-args called with parsedArgs:', JSON.stringify(parsedArgs, null, 2))
-        return {
-          content: [{
-            type: 'text',
-            text: `🔍 Debug Info:
-Original args type: ${typeof args}
-Original args: ${JSON.stringify(args, null, 2)}
-Parsed args type: ${typeof parsedArgs}
-Parsed args: ${JSON.stringify(parsedArgs, null, 2)}`,
-          }],
         }
       }
 
