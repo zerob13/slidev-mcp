@@ -57,7 +57,7 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "@slidev/cli": "^0.49.0"
+    "@slidev/cli": "^0.49.0 || ^0.50.0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.15.1",
